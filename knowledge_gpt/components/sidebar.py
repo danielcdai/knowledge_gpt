@@ -6,27 +6,35 @@ import os
 
 load_dotenv()
 
+PROVIDER_LIST=["OPENAI", "OLLAMA"]
 
 def sidebar():
     with st.sidebar:
-        st.markdown(
-            "## How to use\n"
-            "1. Enter your [OpenAI API key](https://platform.openai.com/account/api-keys) below🔑\n"  # noqa: E501
-            "2. Upload a pdf, docx, or txt file📄\n"
-            "3. Ask a question about the document💬\n"
-        )
-        api_key_input = st.text_input(
-            "OpenAI API Key",
-            type="password",
-            placeholder="Paste your OpenAI API key here (sk-...)",
-            help="You can get your API key from https://platform.openai.com/account/api-keys.",  # noqa: E501
-            value=os.environ.get("OPENAI_API_KEY", None)
-            or st.session_state.get("OPENAI_API_KEY", ""),
-        )
+        
+        provider = st.selectbox("LLM Provider", options=PROVIDER_LIST)  # type: ignore
 
-        st.session_state["OPENAI_API_KEY"] = api_key_input
+        if provider == "OPENAI":
+            st.markdown(
+                "## How to use\n"
+                "1. Enter your [OpenAI API key](https://platform.openai.com/account/api-keys) below🔑\n"  # noqa: E501
+                "2. Upload a pdf, docx, or txt file📄\n"
+                "3. Ask a question about the document💬\n"
+            )
+            api_key_input = st.text_input(
+                "OpenAI API Key",
+                type="password",
+                placeholder="Paste your OpenAI API key here (sk-...)",
+                help="You can get your API key from https://platform.openai.com/account/api-keys.",  # noqa: E501
+                value=os.environ.get("OPENAI_API_KEY", None)
+                or st.session_state.get("OPENAI_API_KEY", ""),
+            )
+            st.session_state["LLM_PROVIDER"] = "OPENAI"
+            st.session_state["OPENAI_API_KEY"] = api_key_input
+            faq()
+            st.markdown("---")
+        elif provider == "OLLAMA":
+            st.session_state["LLM_PROVIDER"] = "OLLAMA"
 
-        st.markdown("---")
         st.markdown("# About")
         st.markdown(
             "📖KnowledgeGPT allows you to ask questions about your "
@@ -39,5 +47,3 @@ def sidebar():
         )
         st.markdown("Made by [mmz_001](https://twitter.com/mm_sasmitha)")
         st.markdown("---")
-
-        faq()

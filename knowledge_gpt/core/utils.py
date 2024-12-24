@@ -3,6 +3,7 @@ from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.docstore.document import Document
 
 from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOllama
 from knowledge_gpt.core.debug import FakeChatModel
 from langchain.chat_models.base import BaseChatModel
 
@@ -30,3 +31,7 @@ def get_llm(model: str, **kwargs) -> BaseChatModel:
         return ChatOpenAI(model=model, **kwargs)  # type: ignore
 
     raise NotImplementedError(f"Model {model} not supported!")
+
+
+def get_ollama_llm(model: str, **kwargs) -> BaseChatModel:
+    return ChatOllama(base_url="http://localhost:11434", model=model, **kwargs)

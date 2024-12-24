@@ -2,6 +2,7 @@ from langchain.vectorstores import VectorStore
 from knowledge_gpt.core.parsing import File
 from langchain.vectorstores.faiss import FAISS
 from langchain.embeddings import OpenAIEmbeddings
+from langchain_community.embeddings import OllamaEmbeddings
 from langchain.embeddings.base import Embeddings
 from typing import List, Type
 from langchain.docstore.document import Document
@@ -52,6 +53,10 @@ def embed_files(
 
     supported_embeddings: dict[str, Type[Embeddings]] = {
         "openai": OpenAIEmbeddings,
+        "ollama": OllamaEmbeddings(
+            base_url="http://localhost:11434",
+            model="nomic-embed-text:latest",
+        ),
         "debug": FakeEmbeddings,
     }
     supported_vector_stores: dict[str, Type[VectorStore]] = {
@@ -59,8 +64,10 @@ def embed_files(
         "debug": FakeVectorStore,
     }
 
-    if embedding in supported_embeddings:
+    if embedding == "openai":
         _embeddings = supported_embeddings[embedding](**kwargs)
+    elif embedding == "ollama":
+        _embeddings = supported_embeddings[embedding]
     else:
         raise NotImplementedError(f"Embedding {embedding} not supported.")
 
