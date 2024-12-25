@@ -52,25 +52,36 @@ elif EMBEDDING == "ollama":
     model: str = st.selectbox("Model", options=OLLAMA_MODEL_LIST)
 
 
-with st.expander("Advanced Options"):
-    chunk_size = st.number_input("Chunk size", min_value=0, value=500, step=100)
-    chunk_overlap = st.number_input("Chunk overlap", min_value=0, value=50, step=10)
-    return_all_chunks = st.checkbox("Show all chunks retrieved from vector search", value=True)
-    show_full_doc = st.checkbox("Show parsed contents of the document")
-
-
 if not uploaded_file:
     st.stop()
 
-try:
-    file = read_file(uploaded_file)
-except Exception as e:
-    display_file_read_error(e, file_name=uploaded_file.name)
+# Embedding metadata for persistence
+with st.form(key="embed_form"):
+    st.subheader("Embedding Settings")
+    # TODO: Persist the index by the source name for later chat selection
+    source_name = st.text_input("Source Name", placeholder="Give your knowledge a name!")
+    # TODO: Support different loader here
+    loader = st.selectbox("Loader", options=["Text", "CSV"])
+    with st.expander("Advanced Options"):
+        chunk_size = st.number_input("Chunk size", min_value=0, value=500, step=100)
+        chunk_overlap = st.number_input("Chunk overlap", min_value=0, value=50, step=10)
+        return_all_chunks = st.checkbox("Show all chunks retrieved from vector search", value=True)
+        show_full_doc = st.checkbox("Show parsed contents of the document")
+    start_btn = st.form_submit_button("Start")
 
-chunked_file = chunk_file(file, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+if start_btn:
+    try:
+        file = read_file(uploaded_file)
+    except Exception as e:
+        display_file_read_error(e, file_name=uploaded_file.name)
 
-if not is_file_valid(file):
+    chunked_file = chunk_file(file, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+
+    if not is_file_valid(file):
+        st.stop()
+else:
     st.stop()
+
 
 if EMBEDDING == "openai" and not is_open_ai_key_valid(openai_api_key, model):
     st.stop()
