@@ -1,12 +1,10 @@
 from langchain.vectorstores import VectorStore
 from knowledge_gpt.core.parsing import File
 from langchain.vectorstores.faiss import FAISS
-from langchain.embeddings import OpenAIEmbeddings
-from langchain_community.embeddings import OllamaEmbeddings
 from langchain.embeddings.base import Embeddings
-from typing import List, Type
+from typing import List, Type, Literal
 from langchain.docstore.document import Document
-from knowledge_gpt.core.debug import FakeVectorStore, FakeEmbeddings
+from knowledge_gpt.core.debug import FakeVectorStore
 
 
 class FolderIndex:
@@ -47,30 +45,36 @@ class FolderIndex:
 
 
 def embed_files(
-    files: List[File], embedding: str, vector_store: str, **kwargs
+    files: List[File], embedding: str, vector_store: str, model: str, 
+    ollama_embedding_url: str | None = None, 
+    **kwargs
 ) -> FolderIndex:
     """Embeds a collection of files and stores them in a FolderIndex."""
+    print(f"Embedding: {embedding}, model: {model}, vector store: {vector_store}")
+    match embedding:
+        case "openai":
+            from langchain.embeddings import OpenAIEmbeddings
+            # TODO: Align the openai embedding model here
+            _embeddings = OpenAIEmbeddings(
+                **kwargs
+            )
+        case "ollama":
+            from langchain_community.embeddings import OllamaEmbeddings
+            _embeddings = OllamaEmbeddings(
+                base_url=ollama_embedding_url,
+                model=model,
+            )
+        case "debug":
+            from knowledge_gpt.core.debug import FakeEmbeddings
+            _embeddings = FakeEmbeddings()
+        case _:
+            from knowledge_gpt.core.debug import FakeEmbeddings
+            _embeddings = FakeEmbeddings()
 
-    supported_embeddings: dict[str, Type[Embeddings]] = {
-        "openai": OpenAIEmbeddings,
-        "ollama": OllamaEmbeddings(
-            base_url="http://localhost:11434",
-            model="nomic-embed-text:latest",
-        ),
-        "debug": FakeEmbeddings,
-    }
     supported_vector_stores: dict[str, Type[VectorStore]] = {
         "faiss": FAISS,
         "debug": FakeVectorStore,
     }
-
-    if embedding == "openai":
-        _embeddings = supported_embeddings[embedding](**kwargs)
-    elif embedding == "ollama":
-        _embeddings = supported_embeddings[embedding]
-    else:
-        raise NotImplementedError(f"Embedding {embedding} not supported.")
-
     if vector_store in supported_vector_stores:
         _vector_store = supported_vector_stores[vector_store]
     else:
@@ -79,3 +83,18 @@ def embed_files(
     return FolderIndex.from_files(
         files=files, embeddings=_embeddings, vector_store=_vector_store
     )
+
+
+def get_model_list(provider: Literal['ollama', 'openai'], openai_api_key: str | None, ollama_base_url: str | None) -> List[str]:
+    if provider == "ollama":
+        from ollama import Client
+        ollama_client = Client(host=ollama_base_url)
+        return [m.model for m in ollama_client.list().models]
+    elif provider == "openai":
+        import openai
+        openai.api_key = openai_api_key
+        response = openai.Model.list()
+        model_list = [model['id'] for model in response['data']]
+        return model_list
+    else:
+        raise NotImplementedError(f"Provider {provider} not supported.")

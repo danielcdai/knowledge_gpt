@@ -11,7 +11,11 @@ PROVIDER_LIST=["OPENAI", "OLLAMA"]
 def sidebar():
     with st.sidebar:
         
-        provider = st.selectbox("LLM Provider", options=PROVIDER_LIST)  # type: ignore
+        # Provider selection
+        provider = st.selectbox("LLM Provider", options=PROVIDER_LIST)
+
+        # Provider environment variable
+        # provider = os.getenv("LLM_PROVIDER", "OPENAI")
 
         if provider == "OPENAI":
             st.markdown(
@@ -33,7 +37,15 @@ def sidebar():
             faq()
             st.markdown("---")
         elif provider == "OLLAMA":
+            ollama_base_url = st.text_input(
+                "Ollama Base URL",
+                type="default",
+                placeholder="Paste your ollama base url here (http://localhost:11434)",
+                value="http://localhost:11434"
+                or st.session_state.get("OLLAMA_BASE_URL", ""),
+            )
             st.session_state["LLM_PROVIDER"] = "OLLAMA"
+            st.session_state["OLLAMA_BASE_URL"] = ollama_base_url
 
         st.markdown("# About")
         st.markdown(
